@@ -1,33 +1,36 @@
 import re
 import requests
 import urlparse
+import urllib
+from bs4 import BeautifulSoup
 
 def crawler(seed,limit):
-	links=[]
-	visited=dict()
-	links.append(seed)
-	visited[seed]=True
-	while(not links):
+	links=[seed]
+	visited=[seed]
+	while(len(links)>0):
 		url=links[0]
-		links.remove(links[0])
-		r=requests.get(url)
-		if r.status_code !=200:
+		links.pop(0)
+		r=None
+		try:
+			r=urllib.urlopen(url).read()
+		except:
+			print (url+"- Didn't work")
 			continue
-		urls=re.findall('<a href="?\'?([^"\'>]*)', r.text)
-		for i in urls:
-			if i not in visited:
-				visited[i]=True
-				links.append(urlparse.urljoin(i))
-		limit=limit-1
-		if limit==0:
-			print("Limit Exceeded")
+		soup=BeautifulSoup(r)
+		for tag in soup.findAll('a',href=True):
+			hyperlink=tag['href']
+			if len(hyperlink)>0 and hyperlink[0]=='#':
+				hyperlink="/"+hyperlink[1:]
+			link=urlparse.urljoin(url,hyperlink)
+			if link not in visited:
+				links.append(link)
+		visited.append(url)
+		if len(visited)==limit:
 			break
 	return visited
 
-list_of_links=crawler("http://www.clarku.edu/",15)
+list_of_crawled=crawler("http://news.ycombinator.com",20)
 
-for key in list_of_links:
-	print(key)
-
-
+for i in list_of_crawled:
+	print(i)
 
