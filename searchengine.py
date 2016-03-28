@@ -19,11 +19,34 @@ class crawler:
 
 	# Add to database (with de-duping)
 	def get_entry_id(self, table, field, value, createnew=True):
-		return None
+		cur=self.con.execute("select rowid from %s where %s='%s'" %(table, field, value))
+		res=cur.fetchone()
+		if(res==None):
+			cur=self.con.execute("insert into %s (%s) values ('%s')" % (table, field, value))
+			return cur.lastrowid
+		else:
+			return res[0]
 
 	# Index a page
 	def add_to_index(self, url, soup):
-		print ('Indexing ',url)
+		if self.is_indexed(url): 
+			return 
+		print('Indexing ',url)
+
+		# Get individual words
+		text=self.get_text_only(soup)
+		words=self.separate_words(text)
+
+		# Get the URL id
+		urlid=self.get_entry_id('urllist','url',url)
+
+		# Link each word to this url
+		for i in range(len(words)):
+			word=words[i]
+			if(word in ignored):
+				continue
+			wordid=self.get_entry_id('wordlist','word',word)
+			self.con.execute("insert into wordlocation(urlid,wordid,location) values (%d,%d,%d)" %(urlid,wordid,i))
 
 	# Extract text from HTML page
 	def get_text_only(self, soup):
@@ -45,6 +68,11 @@ class crawler:
 
 	# Check if url is already indexed
 	def is_indexed(self, url):
+		u=self.con.execute("select rowid from urllist where url='%s'" %url).fetchone()
+		if(u!=None):
+			v=self.con.execute('select * from wordlocation where urlid=%d' %u[0]).fetchone()
+			if(v!=None):
+				return True
 		return False
 
 	# Add link between pages
