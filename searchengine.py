@@ -27,7 +27,16 @@ class crawler:
 
 	# Extract text from HTML page
 	def get_text_only(self, soup):
-		return None
+		v=soup.string
+		if(v==None):
+			c=soup.contents
+			resulttext=''
+			for t in c:
+				subtext=self.get_text_only(t)
+				resulttext+=subtext+"\n"
+			return resulttext
+		else:
+			return v.strip()
 
 	# Separate the words by any non-whitespace character
 	def separate_words(self, text):
