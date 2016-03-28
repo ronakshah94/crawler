@@ -40,7 +40,8 @@ class crawler:
 
 	# Separate the words by any non-whitespace character
 	def separate_words(self, text):
-		return None
+		splitter=re.compile('\\W')
+		return [s.lower() for s in splitter.split(text) if s!='']
 
 	# Check if url is already indexed
 	def is_indexed(self, url):
